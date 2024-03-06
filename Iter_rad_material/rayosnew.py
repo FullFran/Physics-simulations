@@ -171,7 +171,7 @@ def distribucion(dm, lmin, lmax, a, points=100, Nphoto=1000, modo='colimado'):
     l = np.linspace(lmin, lmax, points)
     I = []
 
-    if not modo=='colimado':
+    if modo !='colimado':
         for i in l:
             xi, yi, xf, yf = simate(Nphoto, dm, i, 10, a)
             I.append(len(xf)/Nphoto)
