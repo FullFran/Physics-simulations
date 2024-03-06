@@ -30,6 +30,16 @@ def inter(n, theta):
 
     return D
 
+def prop(theta, d, n, wavelenth):
+    '''
+    
+    '''
+
+    phi = n*2*np.pi/wavelenth*np.cos(theta)*d
+
+    P = np.array([[np.exp(1j*phi), 0],
+                  [0, -np.exp(-1j*phi)]])
+    return P
 def coef_form(n1, n2, theta1, theta2):
     '''
     Calcula los coeficientes de transmisión y reflexión
@@ -52,4 +62,17 @@ def coef_form(n1, n2, theta1, theta2):
     
     return t, r
 
+def coef_monocapa(n1, n2, n3, d, theta1, theta2, theta3, wavel):
+    '''
+    '''
 
+    t12, r12 = coef_form(n1, n2, theta1, theta2)
+
+    t23, r23 = coef_form(n2, n3, theta2, theta3)
+
+    phi = n2*2*np.pi*d/wavel*np.cos(theta2)
+
+    t = t12*t23*np.exp(1j*phi)/(1 + r12*r23*np.exp(-2j*phi))
+    r = r12 * r23 * np.exp(-2j*phi)/(1 + r12*r23*np.exp(-2j*phi))
+
+    return t, r
