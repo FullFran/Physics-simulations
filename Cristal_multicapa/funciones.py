@@ -17,7 +17,7 @@ def snell_law(n1, n2, theta1):
     return np.arcsin(stheta2)
 
 
-def inter(n, theta):
+def inters(n, theta):
     '''
     Calcula la matriz para la interfase.
 
@@ -26,12 +26,28 @@ def inter(n, theta):
 
     return D: matrix
     '''
+    cos = np.cos(theta)
 
     D = np.array([[1, 1],
-                  [n*np.cos(theta), -n*np.cos(theta)]])
+                  [n*cos, -n*cos]])
 
     return D
 
+def interp(n, theta):
+    '''
+    Calcula la matriz para la interfase.
+
+    n: refraction index
+    theta: angle
+
+    return D: matrix
+    '''
+    cos = np.cos(theta)
+
+    D = np.array([[cos, cos],
+                  [n, -n]])
+
+    return D
 
 def prop(theta, d, n, wavelenth):
     '''
@@ -102,14 +118,12 @@ def multicapa(n, d, wavel, theta0=0):
     n refraction index
     d: thickness
     wavel: wavelenth
-
+    ws: weight of the s component
     return T: transmission coefficient
     return R: reflection coefficient
     '''
-
-    theta0 = np.pi/180 * 15
     theta = [theta0]
-    D = [inter(n[0], theta0)]
+    D = [inters(n[0], theta0)]
     Dinv = [np.linalg.inv(D[0])]
     P = [0]
     dtot = Dinv[0]
@@ -117,19 +131,42 @@ def multicapa(n, d, wavel, theta0=0):
     for i in range(len(n)-1):
         theta.append(snell_law(n[i], n[i+1], theta[-1]))
 
-        D = inter(n[i+1], theta[i+1])
+        D = inters(n[i+1], theta[i+1])
         Dinv = np.linalg.inv(D)
-        P = prop(theta[i+1], d[i+1], n[i+1], wavel)
-        dtot = dtot @ D @ P @ Dinv
+        P.append(prop(theta[i+1], d[i+1], n[i+1], wavel))
+        dtot = dtot @ D @ P[i+1] @ Dinv
 
-    D = inter(n[0], theta[-1])
+    D = inters(n[0], theta[-1])
 
     dtot = dtot @ D
 
     t = 1/dtot[0, 0]
     r = dtot[1, 0]/dtot[0, 0]
 
-    T, R = coef_TR(t, r, theta0, theta[-1],  n[0], n[0])
+    Ts, Rs = coef_TR(t, r, theta0, theta[-1],  n[0], n[0])
 
-    return T, R
+
+    D = [interp(n[0], theta0)]
+    Dinv = [np.linalg.inv(D[0])]
+    dtot = Dinv[0]
+
+    for i in range(len(n)-1):
+        theta.append(snell_law(n[i], n[i+1], theta[-1]))
+
+        D = interp(n[i+1], theta[i+1])
+        Dinv = np.linalg.inv(D)
+        dtot = dtot @ D @ P[i+1] @ Dinv
+
+    D = interp(n[0], theta[-1])
+
+    dtot = dtot @ D
+
+    t = 1/dtot[0, 0]
+    r = dtot[1, 0]/dtot[0, 0]
+
+    Tp, Rp = coef_TR(t, r, theta0, theta[-1],  n[0], n[0])
+
+
+
+    return Rs, Rp, Ts, Tp
 
