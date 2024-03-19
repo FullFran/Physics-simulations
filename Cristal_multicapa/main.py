@@ -3,74 +3,35 @@ Optica de multicapa
 '''
 
 import numpy as np
-import funciones as fn
+import matplotlib.pyplot as plt
 
+from funciones import *
 # Unidades en nanómetros
 
-n1 = 1.0
-n2 = 1.5
-n3 = 1.0
-d = 100.0
-wavel = 440
+# Definimos los indices de refracción y los anchos de las capas
+# Como listas (nota: sumar elementos de una lista los concatena)
+n = [3.4] +  [3.6] + [3.4, 3.6] * 15 + [3.4]
+d = [0] + [500] + [500, 500] * 15 + [0]
+
+# Este es el parámetro utilizado en el libro
+omega = np.linspace(0, 3 * np.pi, 1000)
+
+# Lo pasamos a longitudes de onda que es lo que hemos estado usando
+wavelengths = 2 * np.pi / omega * 1000
+
+# Calculamos los coeficientes de reflexión y transmisión
+Rss = []
+Rpp = []
+
+for wavel in wavelengths:
+    Rs, Rp, Ts, Tp = multicapa(n, d, wavel, theta0 = np.pi / 180 * 40)
+    Rss.append(Rs)
+    Rpp.append(Rp)
 
 
-theta1 = np.pi/2
+plt.figure(figsize=(20,5))
+plt.plot(omega, Rss, label='Rs')
+plt.plot(omega, Rpp, label='Rp')
 
-theta2 = fn.snell_law(n1, n2, theta1)
-
-theta3 = fn.snell_law(n2, n3, theta2)
-
-D1 = fn.inter(n1, theta1)
-D2 = fn.inter(n2, theta2)
-D3 = fn.inter(n3, theta3)
-
-D1inv = np.linalg.inv(D1)
-D2inv = np.linalg.inv(D2)
-P2 = fn.prop(n2, d, theta2, wavel)
-
-dtot = D1inv @ D2 @ P2 @ D2inv @ D3
-
-t = 1/dtot[0,0]
-r = dtot[1,0]/dtot[0,0]
-
-ta, ra = fn.coef_monocapa(n1, n2, n3, d, theta1, theta2, theta3, wavel)
-
-print(f't = {t}, ta = {ta} \n r = {r}, ra = {ra}')
-
-def multicapaperiodo(nperiods, n0, n1, n2, d1, d2, wavel):
-    
-    n = [n0] + [n1, n2]*nperiods + [n0]
-    d = [0] + [d1, d2]*nperiods + [0]
-
-    theta0 = np.pi/180 * 15
-    theta = [theta0]
-    D = [fn.inter(n0, theta0)]
-    Dinv = [np.linalg.inv(D[0])]
-    P = [0]
-    dtot = Dinv[0]
-
-    for i in range(len(n)-1):
-        theta.append(fn.snell_law(n[i], n[i+1], theta[-1]))
-
-        D = fn.inter(n[i+1], theta[i+1])
-        Dinv =np.linalg.inv(D)
-        P = fn.prop(theta[i+1], d[i+1], n[i+1], wavel)
-        dtot = dtot @ D @ P @ Dinv
-
-
-    D = fn.inter(n0, theta[-1])
-
-    dtot = dtot @ D
-
-    t = 1/dtot[0,0]
-    r = dtot[1,0]/dtot[0,0]
-
-
-
-    T, R = fn.coef_TR(t,r, theta0, theta[-1],  n0, n0)
-
-    return T, R
-
-T, R = multicapaperiodo(10, n1, n2, n3, d, d, wavel)
-
-print(f'T = {T}, R = {R}')
+plt.legend()
+plt.show()
