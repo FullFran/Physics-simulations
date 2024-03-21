@@ -76,6 +76,7 @@ def absorcion(costheta, phi, d, l, a):
     l: material tickness
     a: absortion coefficient 
     '''
+
     xi, yi = coordenadas(costheta, phi, d)
     xs, ys = coordenadas(costheta, phi, d+l)
 
@@ -86,9 +87,9 @@ def absorcion(costheta, phi, d, l, a):
     drecorre = atenuacion(1, a)
 
     if dsalida < drecorre:
-        return False
+        return False, False
     
-    return True
+    return True, drecorre
 
 
 def simate(Nphoto, dm, l, df, a):
@@ -112,7 +113,7 @@ def simate(Nphoto, dm, l, df, a):
 
     for i in range(Nphoto):
         
-        if not absorcion(costhetas[i], phis[i], dm, l, a):
+        if not absorcion(costhetas[i], phis[i], dm, l, a)[0]:
             passindex.append(i)
 
     # ahora vamos a guardar en una lista los puntos que han pasado 
@@ -146,7 +147,7 @@ def colimado(Nphoto, dm, l, a):
 
     for i in range(Nphoto):
         
-        if not absorcion(costhetas[i], phis[i], dm, l, a):
+        if not absorcion(costhetas[i], phis[i], dm, l, a)[0]:
             pasindex.append(i)
 
     return len(pasindex)/Nphoto
@@ -180,4 +181,101 @@ def distribucion(dm, lmin, lmax, a, points=100, Nphoto=1000, modo='colimado'):
     for i in l:
         I.append(colimado(Nphoto, dm, i, a))
     return l, I
+
+########################################################################
+# Añadiendo procesos a la simulción: efecto fotoeléctrico, raileight y crompton
+########################################################################
+
+def fotoelectrico(costhetafoto, phifoto, z, E=1):
+
+    pass
+
+def raileight(cosraleight, phiraileight, z, E=1):
+    '''
+    
+    ''' 
+    cosr = costheta(1)
+    phir = phi(1)
+
+    return cosr, phir
+
+
+def comtom(costhetacom, phicom, E=1):
+    pass
+
+def pares(costhetap, phip, E=1):
+    pass
+
+def interaccion(costheta, phi, z, prob, E=1):
+    '''
+    '''
+    inter = np.random.choice([fotoelectrico, raileight, comtom, pares], p=prob)
+
+    return inter(costheta, phi, z ,E )
+
+def simulation(Nphoto, dm, l, df, a):
+    ''' 
+    Simulación de Nphoto fotones que salen de una fuente situada a una distancia dm y llegan a un detector situado a una distancia df
+    e interseccionan con dos planos, uno perteneciente al material y otro
+    donde son detectados. Además, se tiene en cuenta la atenuación del material, por lo 
+    que algunos fotones son absorbidos por este y no son detectados.
+
+    Nphoto: numero de fotones
+    dm: distancia de la fuente al material
+    l: espesor del material
+    df : distancia de la fuente al detector
+
+    a: coeficiente de atenuación
+    prob = [fotoelectrico, raileight, compton, pares]
+
+    '''
+    prob = [0.0, 1, 0.0, 0.0]
+
+
+    costhetas = costheta(Nphoto)
+    phis = phi(Nphoto)
+
+    passindex = []
+    interationindex = []    
+    zinter = []
+
+
+    for i in range(Nphoto):
+        pasa, z = absorcion(costhetas[i], phis[i], dm, l, a)
+        if not pasa:
+            passindex.append(i)
+            continue
+        
+        interationindex.append(i)
+        zinter.append(z)
+    
+    # ahora vamos a guardar en una lista los puntos que han pasado 
+    costhetapass = costhetas[passindex]
+    phispass = phis[passindex]
+
+    # ahora vamos a guardar en una lista los puntos que han interactuado
+    costhetainter = costhetas[interationindex]
+    phisinter = phis[interationindex]
+
+    xentrada, yentrada = coordenadas(costhetas, phis, dm+zinter)
+
+    xinter, yinter = [], []
+
+    for i in range(len(costhetainter)):
+        if interaccion(costhetainter[i], phisinter[i], zinter[i], prob)[0] is not None:
+            cosnuevo, phinuevo = interaccion(costhetainter[i], phisinter[i], zinter[i], prob)
+            
+            x, y = coordenadas(cosnuevo, phinuevo, dm+zinter[i])
+            
+            xinter.append(x)
+            yinter.append(y)
+
+    
+
+    xi, yi = coordenadas(costhetas, phis, dm)
+    xf, yf = coordenadas(costhetapass, phispass, df)    
+    xf = np.append(xf, xinter)
+    yf = np.append(yf, yinter)
+    return xi, yi, xf, yf
+
 
