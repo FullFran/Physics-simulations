@@ -76,8 +76,7 @@ def multicapa(n, d, wavel, theta0=0):
     d: thickness
     wavel: wavelenth
     ws: weight of the s component
-    return T: transmission coefficient
-    return R: reflection coefficient
+    Rs, Rp: reflection coefficients
     '''
     theta = [theta0]
     D = [inters(n[0], theta0)]
